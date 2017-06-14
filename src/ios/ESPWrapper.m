@@ -5,8 +5,8 @@
 #import "ESPTouchResult.h"
 #import "ESP_NetUtil.h"
 #import "ESPTouchDelegate.h"
-#import "AFNetworking.h"
-#import "FastSocket.h"
+//#import "AFNetworking.h"
+//#import "FastSocket.h"
 
 @interface EspTouchDelegateImpl : NSObject<ESPTouchDelegate>
 
@@ -70,7 +70,7 @@ NSString* devicePass;
     NSString* wifiKey;
     NSString* activatePort;
     NSString* bssid;
-    FastSocket *socket;
+//    FastSocket *socket;
     NSString *para;
     NSString * requestUrl;
     
@@ -125,71 +125,13 @@ NSString* devicePass;
         ESPTouchResult *esptouchResult = [self executeForResult];
         NSLog(@"EspTouchDelegateImpl onEsptouchResultAddedWithResult bssid: %@", esptouchResult.bssid);
         deviceIp=[ESP_NetUtil descriptionInetAddrByData:esptouchResult.ipAddrData];
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:esptouchResult.bssid];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:commandHolder.callbackId];
         //
         //    dispatch_async(dispatch_get_main_queue(), ^{
         //
         //    });
-        @try {
-            
-            if (deviceIp!=nil) {
-                requestUrl =[[NSString alloc] init];
-                //                requestUrl = [[[[[requestUrl stringByAppendingString:@"http://"] stringByAppendingString:deviceIp]
-                //                                stringByAppendingString:@":"]
-                //                                stringByAppendingString:@"8000"]
-                //                               stringByAppendingString:@"/"];
-                requestUrl = [requestUrl stringByAppendingString:deviceIp];
-                
-                para=[[[[[[[[@"{\"app_id\":\"" stringByAppendingString:APPId] stringByAppendingString:@"\",\"product_key\":\""]stringByAppendingString:productKey]stringByAppendingString:@"\",\"user_token\":\""]stringByAppendingString:token] stringByAppendingString:@"\",\"uid\":\""]stringByAppendingString:uid]stringByAppendingString:@"\"}"];
-                
-                sleep(5);
-                
-                NSDictionary *ret;
-                int resultFlag=0;
-                
-                socket= [[FastSocket alloc] initWithHost:requestUrl andPort:@"8000"];
-                [socket setTimeout:20];
-                [socket connect];
-                
-                NSData *data = [para dataUsingEncoding:NSUTF8StringEncoding];
-                long count = [socket sendBytes:[data bytes] count:[data length]];
-                
-                char bytes[59];
-                [socket receiveBytes:bytes count:59];
-                NSString *received = [[NSString alloc] initWithBytes:bytes length:59 encoding:NSUTF8StringEncoding];
-                
-                NSData *jsonData = [received dataUsingEncoding:NSUTF8StringEncoding];
-                NSError *err;
-                
-                
-                if(received!=nil){
-                    ret = [NSJSONSerialization JSONObjectWithData:jsonData
-                                                          options:NSJSONReadingMutableContainers
-                                                            error:&err];
-                    resultFlag = 1;
-                }
-                
-                
-                
-                if(resultFlag==1){
-                    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:ret];
-                    [self.commandDelegate sendPluginResult:pluginResult callbackId:commandHolder.callbackId];
-                }else{
-                    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
-                    [self.commandDelegate sendPluginResult:pluginResult callbackId:commandHolder.callbackId];
-                }
-            } else {
-                CDVPluginResult *
-                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
-                [self.commandDelegate sendPluginResult:pluginResult callbackId:commandHolder.callbackId];
-            }
-        }
-        @catch (NSException *exception) {
-            CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:commandHolder.callbackId];
-        }
-        @finally {
-            //
-        }
+        
     }];
     
 }
@@ -212,17 +154,7 @@ NSString* devicePass;
 {
     
 }
-- (void)sendDidVerification:(CDVInvokedUrlCommand*)command
-{
-    NSString* did = [command.arguments objectAtIndex:0];
-    commandHolder = command;
-    NSString *para=[[@"{\"device_id\":\"" stringByAppendingString:did]stringByAppendingString:@"\"}"];
-    NSData *data = [para dataUsingEncoding:NSUTF8StringEncoding];
-    long count = [socket sendBytes:[data bytes] count:[data length]];
-    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"OK"];
-    [self.commandDelegate sendPluginResult:pluginResult callbackId:commandHolder.callbackId];
-    
-}
+
 
 - (NSDictionary *)fetchNetInfo
 {
@@ -249,10 +181,7 @@ NSString* devicePass;
     if (_esptouchTask !=nil) {
         [_esptouchTask interrupt];
     }
-    if(socket!=nil)
-    {
-        [socket close];
-    }
+
     //    easylink_config.delegate = nil;
     //    easylink_config = nil;
 }

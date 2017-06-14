@@ -13,7 +13,6 @@ import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -90,14 +89,14 @@ public class ESPWrapper extends CordovaPlugin {
                 mEsptouchTask.setEsptouchListener(myListener);
                 IEsptouchResult result = mEsptouchTask.executeForResult();
 
-                if (result.isSuc()) {
-                    try {
-                        Thread.sleep(3000L);
-                        sendDid(result.getInetAddress().getHostAddress(), result.getBssid());
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+//                if (result.isSuc()) {
+//                    try {
+//                        Thread.sleep(3000L);
+//                        sendDid(result.getInetAddress().getHostAddress(), result.getBssid());
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
                 //                List<IEsptouchResult> result = mEsptouchTask.executeForResults(taskResultCountStr);
             }
         }).start();
@@ -109,6 +108,7 @@ public class ESPWrapper extends CordovaPlugin {
         public void onEsptouchResultAdded(final IEsptouchResult result) {
             Log.d(TAG, "IEsptouchListener:" + result.getInetAddress().getHostAddress());
             Log.d(TAG, "IEsptouchListener:" + result.getBssid());//macAddress;
+            easyLinkCallbackContext.success(result.getBssid());
         }
     };
 
@@ -160,69 +160,5 @@ public class ESPWrapper extends CordovaPlugin {
         }
     }
 
-    private void sendDid(final String deviceIp, final String mac) {
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                boolean isReady = false;
-                int timeoutValue = 30;
-                while (!isReady && !(timeoutValue == 0)) {
-                    try {
-                        Thread.sleep(1000L);
-                        timeoutValue--;
-                    } catch (InterruptedException e) {
-                        Log.e(TAG, e.getMessage());
-                    }
-                    try {
-                        try {
-                            while (!isReady) {
-                                socket = new Socket(deviceIp, 8000);
-                                isReady = true;
-                            }
-                        } catch (Exception se) {
-                            Log.e(TAG, se.toString());
-                        }
-                        if (isReady) {
-                            final OutputStream os = socket.getOutputStream();
-                            String cmd = "{" + "\"app_id\":\"" + APPId + "\"," +
-                                    "\"product_key\":\"" + productKey + "\"," +
-                                    "\"user_token\":\"" + token + "\"," +
-                                    "\"uid\":\"" + uid +
-                                    "\"}";
-                            os.write(cmd.getBytes());
-                            Log.i(TAG, cmd);
-
-                            InputStream is = socket.getInputStream();
-                            byte[] reply = new byte[0];
-                            try {
-                                reply = readStream(is);
-                            } catch (Exception e) {
-                                Log.e(TAG, e.toString());
-                                e.printStackTrace();
-                            }
-                            //reply={"mac":"5c:cf:7f:8b:f3:0f","device_id":"E3YjXEhGFPGuMxtMy"}
-                            final String replyMessages = new String(reply);
-                            JSONObject activeJSON = new JSONObject(replyMessages);
-                            easyLinkCallbackContext.success(activeJSON);
-                            if (reply.length > 0) {
-                                break;
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, e.getMessage());
-                        try {
-                            Thread.sleep(3 * 1000L);
-                            timeoutValue = timeoutValue - 3;
-                        } catch (InterruptedException e1) {
-
-                            Log.e(TAG, e1.getMessage());
-
-                        }
-                    }
-                }
-            }
-        }).start();
-    }
 
 }
